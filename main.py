@@ -42,8 +42,11 @@ class WestenWorld:
         # print("verify_code:", self.verify_data['verify_code'])
         resp = self.session.post(check_url, headers=self.headers, data=self.verify_data, proxies=self.proxies)
         print(resp.text)
-        if resp.json()['data']['has_present']:
-            return True
+        print(resp.json()['data']['has_present'])
+        if resp.json()['data']['has_present'] == False:
+            requests.get("http://101.132.128.215:5010/delete/?proxy={}".format(proxies['http'].replace('http://','')))
+            return False
+        return True
 
     def regist(self):
         print("STEP_3——开始注册")
@@ -57,22 +60,25 @@ class WestenWorld:
         route_all = re.findall(r'node_data: (.*?),\n};', resp.text)[0]
         self.trojan_url = get_fatest(route_all) + "#" + time.strftime("%m-%d %H:%M:%S", time.localtime()) + "\n"
         print(self.trojan_url)
+        return True
 
     def run(self):
-        self.get_csrftoken()
-        self.verify()
-        self.regist()
-        self.get_route()
+        if self.get_csrftoken() and self.verify() and self.regist() and self.get_route():
+            return True
+        else:
+            return False
 
 
 if __name__ == "__main__":
-    ip = get_proxies()
-    proxies = {
-        "http": "http://" + ip,
-        "https": "http://" + ip,
-    }
-    VPN = WestenWorld(proxies)
-    VPN.run()
+    while True:
+        ip = get_proxies()
+        proxies = {
+            "http": "http://" + ip,
+            "https": "http://" + ip,
+        }
+        VPN = WestenWorld(proxies)
+        if VPN.run():
+            break
     subscribe = base64.b64encode(VPN.trojan_url.encode('utf-8')).decode(encoding='utf-8')
     with open('subscribe/trojan.txt', 'w') as f:
         f.write(str(subscribe))
